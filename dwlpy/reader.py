@@ -1,10 +1,15 @@
-import parser
 import re
+
+import parser
+import printer
 
 def read_str(s):
     """ call tokenizer and create a new Reader object instance with the tokens. Then it will call read_form with the Reader instance."""
 
     tokens = tokenizer(s)
+    if len(tokens) == 0:
+        return []
+    #print("tokens:", tokens)
     r = parser.Reader(tokens)
     malData = read_form(r)
     return malData
@@ -13,10 +18,11 @@ def read_str(s):
 def tokenizer(s):
     """ this function will take a single string and return a list of all the tokens (strings) in it."""
 
-    pattern = """[\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"|;.*|[^\s\[\]{}('"`,;)]*)"""
+    pattern = r"""[\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"|;.*|[^\s\[\]{}('"`,;)]*)"""
     
-    tokens = re.findall(pattern, s)
+    tokens = [x for x in re.findall(pattern, s) if ((len(x)> 0) and(x[0] != ';'))]
 
+    #print ("tokens:", tokens)
     return tokens
 
 
@@ -32,12 +38,14 @@ def read_form(readerInst):
     tok = readerInst.peek()
 
     if tok is '(':
-        return read_list(readerInst)
+        return parser.LispList(read_list(readerInst, ')'))
+    elif tok is '[':
+        return parser.LispVector(read_list(readerInst, ']'))
     else:
         return read_atom(readerInst)
     
 
-def read_list(readerInst):
+def read_list(readerInst, termVal):
     """this function will repeatedly call read_form with the Reader object
     until it encounters a ')' token (if it reaches EOF before reading
     a ')' then that is an error). It accumulates the results into a
@@ -56,7 +64,7 @@ def read_list(readerInst):
         
         malItem = read_form(readerInst)
 
-        if isinstance(malItem, parser.StrSymbol) and malItem.val is ')':
+        if isinstance(malItem, parser.StrSymbol) and malItem.val is termVal:
             return outList
         outList.append(malItem)
 
@@ -71,9 +79,27 @@ def read_atom(readerInst):
     try:
         intNum = int(malItem)
         return parser.IntSymbol(intNum)
-
     except ValueError:
-        return parser.StrSymbol(malItem)
+        #print ("malItem:", malItem)
+        #print ("len:", len(malItem))
+        if ((len(malItem)>1) and (malItem[0] == '"') and (malItem[-1] == '"')):
+            s = printer.unescape(malItem[1:-1])
+            #print ("making lisp string:", s)
+            #for i,c in enumerate(s):
+            #    print (i, c)
+            return parser.LispString(s)
+
+        if ((len(malItem) > 1) and (malItem[0] == ':')):
+            s = malItem[1:]
+            return parser.LispKeyword(s)
+        if malItem == 'nil':
+            return parser.NilSymbol()
+        elif malItem == 'true':
+            return parser.TrueSymbol()
+        elif malItem == 'false':
+            return parser.FalseSymbol()
+        else:
+            return parser.StrSymbol(malItem)
     
     
 

@@ -5,21 +5,77 @@ this file will contain a single function pr_str which does the opposite of read_
 """
 
 
-def pr_str(expr):
+def escape(s):
+    outs = ""
+    for c in s:
+        if c == '"':
+            outs += r'\"'
+        elif c == '\n':
+            outs += r'\n'
+        elif c == '\\':
+            outs += '\\\\'
+        else:
+            outs += c
+    return outs
+
+def unescape(s):
+    outs = ""
+    while s:
+        c = s[0]
+        if c == '\\':
+            n = s[1]
+            if n == 'n':
+                outs += '\n'
+            elif n == '\\':
+                outs += '\\'
+            elif n == '"':
+                outs += '"'
+            elif n == 't':
+                outs += "\t"
+            else:
+                outs += '<???>'
+            s = s[2:]
+        else:
+            outs += c
+            s = s[1:]
+    return outs
+
+def pr_str(expr, print_readably):
     """pr_str is much simpler (than read_str) and is basically just a switch statement on the type of the input object:
     - symbol: return the string name of the symbol
     - number: return the number (as a string)
     - list: iterate through each element of the list, calling pr_str on it, join the results together with a space separator, and surround the final result with parens.
     """
 
-    if isinstance(expr, list):
-        vals = [pr_str(val) for val in expr]
+    if expr == []:
+        return "blank line"
+
+    if isinstance(expr, parser.LispList):
+        vals = [pr_str(val, print_readably) for val in expr.values]
         return '(' + ' '.join(vals) + ')'
+    if isinstance(expr, parser.LispVector):
+        vals = [pr_str(val, print_readably) for val in expr.values]
+        return '[' + ' '.join(vals) + ']'
     elif isinstance(expr, parser.IntSymbol):
         return str(expr.val)
+    elif isinstance(expr, parser.NilSymbol):
+        return 'nil'
+    elif isinstance(expr, parser.TrueSymbol):
+        return 'true'
+    elif isinstance(expr, parser.FalseSymbol):
+        return 'false'
     elif isinstance(expr, parser.StrSymbol):
         return expr.val
-
+    elif isinstance(expr, parser.LispString):
+        if print_readably:
+            s = escape(expr.str)
+            return '"' + s + '"'
+        else:
+            s = expr.str
+            return s
+    elif isinstance(expr, parser.FuncClosure):
+        return '#<function>'
+    elif isinstance(expr, parser.LispKeyword):
+        return str(expr)
     else:
-        print ("can't print", expr)
-        return -1
+        return '<???>'
