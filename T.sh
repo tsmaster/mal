@@ -1,2 +1,2 @@
 #! /bin/bash
-make "test^dwlpy^step4"
+make "test^dwlpy^step5"

@@ -1,3 +1,3 @@
 #! /bin/bash
 
-python3 step4_if_fn_do.py
+python3 step5_tco.py
