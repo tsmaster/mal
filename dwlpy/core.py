@@ -1,5 +1,7 @@
 import parser
 import printer
+import reader
+
 
 class Namespace:
     """ Namespace maps symbols to functions"""
@@ -24,6 +26,13 @@ class Namespace:
         self.set('str', func_str)
         self.set('prn', func_prn)
         self.set('println', func_println)
+        self.set('read-string', func_read_string)
+        self.set('slurp', func_slurp)
+        self.set('atom', func_atom)
+        self.set('atom?', func_atom_p)
+        self.set('deref', func_deref)
+        self.set('reset!', func_reset_bang)
+        self.set('swap!', func_swap_bang)
 
     def set(self, key, func):
         self.funcs[key] = func
@@ -133,5 +142,56 @@ def func_println(*args):
     print(joined)
     return parser.NilSymbol()
     
-        
+def func_read_string(arg):
+    if not isinstance(arg, parser.LispString):
+        raise ArgumentError("should be a string")
+    return reader.read_str(arg.str)
 
+def func_slurp(arg):
+    if not isinstance(arg, parser.LispString):
+        raise ArgumentError("should be a string")
+    fn = arg.str
+    with open(fn) as fileObj:
+        return parser.LispString(fileObj.read())
+    
+def func_atom(arg):
+    return parser.LispAtom(arg)
+
+def func_atom_p(arg):
+    if isinstance(arg, parser.LispAtom):
+        return parser.TrueSymbol()
+    else:
+        return parser.FalseSymbol()
+
+def func_deref(arg):
+    if not isinstance(arg, parser.LispAtom):
+        raise ArgumentError("should be an atom")
+
+    return arg.ptr
+
+def func_reset_bang(arg, newval):
+    if not isinstance(arg, parser.LispAtom):
+        raise ArgumentError("should be an atom")
+    
+    arg.ptr = newval
+    return newval
+
+def func_swap_bang(arg, fn, *args):
+    """The atom's value is modified to the result of applying the function
+    with the atom's value as the first argument and the optionally
+    given function arguments as the rest of the arguments. The new
+    atom's value is returned."""
+
+    if not isinstance(arg, parser.LispAtom):
+        raise ArgumentError("should be an atom")
+
+    arg_list = [arg.ptr] + list(args)
+
+    if isinstance(fn, parser.FuncClosure):
+        val = fn.call(arg_list)
+    else:
+        val = fn(*arg_list)
+
+    arg.ptr = val
+
+    return val

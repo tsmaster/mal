@@ -41,6 +41,12 @@ def read_form(readerInst):
         return parser.LispList(read_list(readerInst, ')'))
     elif tok is '[':
         return parser.LispVector(read_list(readerInst, ']'))
+    elif tok is '{':
+        return parser.LispHashMap(read_list(readerInst, '}'))
+    elif tok is '@':
+        atSign = readerInst.next()
+        nextForm = read_form(readerInst)
+        return parser.LispList([parser.StrSymbol('deref'), nextForm])
     else:
         return read_atom(readerInst)
     

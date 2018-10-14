@@ -1,3 +1,5 @@
+import environment
+
 class Symbol:
     pass
 
@@ -43,16 +45,33 @@ class FalseSymbol(Symbol):
         return str(self)
 
 class FuncClosure:
-    def __init__(self, env, params, body):
+    def __init__(self, env, params, body, evalFunc):
         self.env = env
         self.params = params
         self.body = body
+        self.evalFunc = evalFunc
         
     def __str__(self):
         return "FuncClosure"
 
     def __repr__(self):
         return str(self)
+
+    def prepareEnv(self, args):
+        newenv = environment.Environment(self.env, [], [])
+                
+        for i,p in enumerate(self.params):
+            if p == '&':
+                nextP = func.params[i+1]
+                val = parser.LispList(args[i:])
+                newenv.set(nextP, val)
+                break
+            val = args[i]
+            newenv.set(p, val)
+        return newenv
+
+    def call(self, argList):
+        return self.evalFunc(self.body, self.prepareEnv(argList))
 
 class LispList:
     def __init__(self, values):
@@ -75,8 +94,24 @@ class LispKeyword:
         return ':' + self.rawVal
 
 class LispHashMap:
-    def __init__(self, val):
+    def __init__(self, vals):
         self.data = {}
+        for i in range(0, len(vals), 2):
+            key = vals[i]
+            val = vals[i+1]
+            self.data[key] = val
+            
+    def keys(self):
+        keyList = list(self.data.keys())
+        #keyList.sort()
+        return keyList
+
+    def lookup(self, key):
+        return self.data[key]
+
+class LispAtom:
+    def __init__(self, val):
+        self.ptr = val
 
 
 class Reader:

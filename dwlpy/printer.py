@@ -77,5 +77,15 @@ def pr_str(expr, print_readably):
         return '#<function>'
     elif isinstance(expr, parser.LispKeyword):
         return str(expr)
+    elif isinstance(expr, parser.LispAtom):
+        contents = pr_str(expr.ptr, print_readably)
+        return "(atom {0})".format(contents)
+    elif isinstance(expr, parser.LispHashMap):
+        vals = []
+        for k in expr.keys():
+            vals.append(pr_str(k, print_readably))
+            vals.append(pr_str(expr.lookup(k), print_readably))
+        s = " ".join(vals)
+        return '{'+s+'}'
     else:
-        return '<???>'
+        return '<unknown of of type {0}:{1}>'.format(type(expr), expr)
