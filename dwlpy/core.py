@@ -35,6 +35,9 @@ class Namespace:
         self.set('swap!', func_swap_bang)
         self.set('cons', func_cons)
         self.set('concat', func_concat)
+        self.set('nth', func_nth)
+        self.set('first', func_first)
+        self.set('rest', func_rest)
 
     def set(self, key, func):
         self.funcs[key] = func
@@ -206,3 +209,29 @@ def func_concat(*args):
     for a in args:
         outvals += a.values
     return parser.LispList(outvals)
+
+def func_nth(arg, pos):
+    pval = pos.val
+    if ((pval < 0) or
+        (pval >= len(arg.values))):
+        raise IndexError("out of range")
+    return arg.values[pos.val]
+
+def func_first(arg):
+    if isinstance(arg, parser.NilSymbol):
+        return arg
+    if (isinstance(arg, parser.LispList) or
+        isinstance(arg, parser.LispVector)):
+        if len(arg.values) == 0:
+            return parser.NilSymbol()
+        return arg.values[0]
+    raise ArgumentError("should be list or vector")
+
+def func_rest(arg):
+    if isinstance(arg, parser.NilSymbol):
+        return parser.LispList([])
+    if (isinstance(arg, parser.LispList) or
+        isinstance(arg, parser.LispVector)):
+        return parser.LispList(arg.values[1:])
+    raise ArgumentError("should be list or vector")
+    

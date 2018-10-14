@@ -50,6 +50,10 @@ class FuncClosure:
         self.params = params
         self.body = body
         self.evalFunc = evalFunc
+        self.isMacro = False
+
+    def setMacro(self, isMacro):
+        self.isMacro = isMacro
         
     def __str__(self):
         return "FuncClosure"
@@ -62,8 +66,8 @@ class FuncClosure:
                 
         for i,p in enumerate(self.params):
             if p == '&':
-                nextP = func.params[i+1]
-                val = parser.LispList(args[i:])
+                nextP = self.params[i+1]
+                val = LispList(args[i:])
                 newenv.set(nextP, val)
                 break
             val = args[i]
