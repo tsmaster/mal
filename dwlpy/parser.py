@@ -77,6 +77,9 @@ class LispList:
     def __init__(self, values):
         self.values = values
 
+    def prepend(self, new_head):
+        return LispList([new_head] + list(self.values))
+
 class LispString:
     def __init__(self, s):
         self.str = s
@@ -84,6 +87,9 @@ class LispString:
 class LispVector:
     def __init__(self, values):
         self.values = values
+        
+    def prepend(self, new_head):
+        return LispList([new_head] + list(self.values))
 
 class LispKeyword:
     def __init__(self, val):

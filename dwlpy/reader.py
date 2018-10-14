@@ -47,6 +47,22 @@ def read_form(readerInst):
         atSign = readerInst.next()
         nextForm = read_form(readerInst)
         return parser.LispList([parser.StrSymbol('deref'), nextForm])
+    elif tok is "'":
+        readerInst.next()
+        nextForm = read_form(readerInst)
+        return parser.LispList([parser.StrSymbol('quote'), nextForm])
+    elif tok is "`":
+        readerInst.next()
+        nextForm = read_form(readerInst)
+        return parser.LispList([parser.StrSymbol('quasiquote'), nextForm])
+    elif tok is "~":
+        readerInst.next()
+        nextForm = read_form(readerInst)
+        return parser.LispList([parser.StrSymbol('unquote'), nextForm])
+    elif tok == "~@":
+        readerInst.next()
+        nextForm = read_form(readerInst)
+        return parser.LispList([parser.StrSymbol('splice-unquote'), nextForm])
     else:
         return read_atom(readerInst)
     

@@ -1,3 +1,3 @@
 #! /bin/bash
 
-python3 step6_file.py
+python3 step7_quote.py

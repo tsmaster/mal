@@ -33,6 +33,8 @@ class Namespace:
         self.set('deref', func_deref)
         self.set('reset!', func_reset_bang)
         self.set('swap!', func_swap_bang)
+        self.set('cons', func_cons)
+        self.set('concat', func_concat)
 
     def set(self, key, func):
         self.funcs[key] = func
@@ -195,3 +197,12 @@ def func_swap_bang(arg, fn, *args):
     arg.ptr = val
 
     return val
+
+def func_cons(a, b_list):
+    return b_list.prepend(a)
+
+def func_concat(*args):
+    outvals = []
+    for a in args:
+        outvals += a.values
+    return parser.LispList(outvals)
