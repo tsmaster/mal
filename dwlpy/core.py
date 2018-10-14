@@ -38,6 +38,28 @@ class Namespace:
         self.set('nth', func_nth)
         self.set('first', func_first)
         self.set('rest', func_rest)
+        self.set('throw', func_throw)
+        self.set('apply', func_apply)
+        self.set('map', func_map)
+        self.set('nil?', func_nil_p)
+        self.set('true?', func_true_p)
+        self.set('false?', func_false_p)
+        self.set('symbol', func_symbol)
+        self.set('symbol?', func_symbol_p)
+        self.set('keyword', func_keyword)
+        self.set('keyword?', func_keyword_p)
+        self.set('vector', func_vector)
+        self.set('vector?', func_vector_p)
+        self.set('hash-map', func_hash_map)
+        self.set('map?', func_map_p)
+        self.set('assoc', func_assoc)
+        self.set('dissoc', func_dissoc)
+        self.set('get', func_get)
+        self.set('contains?', func_contains_p)
+        self.set('keys', func_keys)
+        self.set('vals', func_vals)
+        self.set('sequential?', func_sequential_p)
+
 
     def set(self, key, func):
         self.funcs[key] = func
@@ -72,38 +94,10 @@ def func_count(arg):
     return parser.IntSymbol(0)
         
 def func_eq(a, b):
-    # allow vectors and lists to compare equal?
-    aIsList = (isinstance(a, parser.LispList) or
-               isinstance(a, parser.LispVector))
-    bIsList = (isinstance(b, parser.LispList) or
-               isinstance(b, parser.LispVector))
-    if (aIsList and bIsList):
-        if len(a.values) != len(b.values):
-            return parser.FalseSymbol()
-        for i in range(len(a.values)):
-            aval = a.values[i]
-            bval = b.values[i]
-            if not func_eq(aval, bval):
-                return parser.FalseSymbol()
+    if (parser.compare_eq(a, b)):
         return parser.TrueSymbol()
-    if (type(a) != type(b)):
+    else:
         return parser.FalseSymbol()
-    if isinstance(a, parser.LispString):
-        if ((len(a.str) != len(b.str)) or
-            (a.str != b.str)):
-            return parser.FalseSymbol()
-        else:
-            return parser.TrueSymbol()
-    if (isinstance(a, parser.IntSymbol) or
-        isinstance(a, parser.StrSymbol) or
-        isinstance(a, parser.LispKeyword)):
-        if a.val == b.val:
-            return parser.TrueSymbol()
-        else:
-            return parser.FalseSymbol()
-
-    # other (singleton?) types
-    return parser.TrueSymbol()
 
 def func_lt(a, b):
     if a.val < b.val:
@@ -234,4 +228,152 @@ def func_rest(arg):
         isinstance(arg, parser.LispVector)):
         return parser.LispList(arg.values[1:])
     raise ArgumentError("should be list or vector")
+
+def func_apply(*args):
+    """takes at least two arguments. The first argument is a function and
+    the last argument is list (or vector). The arguments between the
+    function and the last argument (if there are any) are concatenated
+    with the final argument to create the arguments that are used to
+    call the function. The apply function allows a function to be
+    called with arguments that are contained in a list (or vector). In
+    other words, (apply F A B [C D]) is equivalent to (F A B C D).
+    """
+
+    fn = args[0]
+    lastArg = args[-1]
+    restArgs = list(args[1:-1])
+    fullArgs = restArgs + list(lastArg.values)
+    if (isinstance(fn, parser.FuncClosure)):
+        return fn.call(fullArgs)
+    else:
+        return fn(*fullArgs)
+
+def func_map(fn, argList):
+    """takes a function and a list (or vector) and evaluates the function
+    against every element of the list (or vector) one at a time and
+    returns the results as a list."""
+
+    retvals = []
+
+    for arg in argList.values:
+        if isinstance(fn, parser.FuncClosure):
+            r = fn.call([arg])
+        else:
+            r = fn(arg)
+        retvals.append(r)
+    return parser.LispList(retvals)
+
+def func_nil_p(arg):
+    if isinstance(arg, parser.NilSymbol):
+        return parser.TrueSymbol()
+    else:
+        return parser.FalseSymbol()
     
+def func_true_p(arg):
+    if isinstance(arg, parser.TrueSymbol):
+        return parser.TrueSymbol()
+    else:
+        return parser.FalseSymbol()
+    
+def func_false_p(arg):
+    if isinstance(arg, parser.FalseSymbol):
+        return parser.TrueSymbol()
+    else:
+        return parser.FalseSymbol()
+
+def func_symbol(arg):
+    return parser.StrSymbol(arg.str)
+    
+def func_symbol_p(arg):
+    if isinstance(arg, parser.StrSymbol):
+        return parser.TrueSymbol()
+    else:
+        return parser.FalseSymbol()
+    
+def func_throw(arg):
+    raise parser.MalException(printer.pr_str(arg, False), arg)
+
+def func_keyword(arg):
+    if isinstance(arg, parser.LispKeyword):
+        return arg
+    if isinstance(arg, parser.LispString):
+        return parser.LispKeyword(arg.str)
+
+def func_keyword_p(arg):
+    if isinstance(arg, parser.LispKeyword):
+        return parser.TrueSymbol()
+    else:
+        return parser.FalseSymbol()
+
+def func_vector(*args):
+    return parser.LispVector(args)
+
+def func_vector_p(arg):
+    if (isinstance(arg, parser.LispVector)):
+        return parser.TrueSymbol()
+    else:
+        return parser.FalseSymbol()
+
+def func_hash_map(*args):
+    return parser.LispHashMap(args)
+
+def func_map_p(arg):
+    if (isinstance(arg, parser.LispHashMap)):
+        return parser.TrueSymbol()
+    else:
+        return parser.FalseSymbol()
+
+def func_assoc(*args):
+    oldHM = args[0]
+    kvs = args[1:]
+    newDict = {}
+    newDict.update(oldHM.data)
+    newHM = parser.LispHashMap([])
+    newHM.data = newDict
+
+    for i in range(0, len(kvs), 2):
+        key = kvs[i]
+        val = kvs[i+1]
+        newHM.assign(key, val)
+    
+    return newHM
+
+def func_dissoc(hm, *keys):
+    pass
+
+def func_get(hm, key):
+    if not isinstance(hm, parser.LispHashMap):
+        return parser.NilSymbol()
+    v = hm.lookup(key)
+    if v is None:
+        return parser.NilSymbol()
+    else:
+        return v
+
+def func_contains_p(hm, key):
+    if not isinstance(hm, parser.LispHashMap):
+        return parser.FalseSymbol()
+    v = hm.lookup(key)
+    if v is None:
+        return parser.FalseSymbol()
+    else:
+        return parser.TrueSymbol()
+
+def func_keys(arg):
+    return parser.LispList(list(arg.keys()))
+
+def func_vals(arg):
+    vals = []
+    for k in arg.keys():
+        vals.append(arg.lookup(k))
+    return parser.LispList(vals)
+
+def func_sequential_p(arg):
+    if ((isinstance(arg, parser.LispList)) or
+        (isinstance(arg, parser.LispVector))):
+        return parser.TrueSymbol()
+    else:
+        return parser.FalseSymbol()
+
+
+

@@ -14,7 +14,7 @@ class Environment:
             return self
 
         if not self.outer:
-            raise ValueError('not found:'+key)
+            raise ValueError("'{0}' not found".format(key))
 
         return self.outer.find(key)
 

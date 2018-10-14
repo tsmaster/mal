@@ -1,3 +1,3 @@
 #! /bin/bash
 
-python3 step8_macros.py
+python3 step9_try.py

@@ -117,8 +117,18 @@ class LispHashMap:
         return keyList
 
     def lookup(self, key):
-        return self.data[key]
+        for k in self.data.keys():
+            if compare_eq(k,key):
+                return self.data[k]
+        return None
 
+    def assign(self, key, value):
+        for k in self.data.keys():
+            if compare_eq(k,key):
+                self.data[k] = value
+                return
+        self.data[key] = value
+    
 class LispAtom:
     def __init__(self, val):
         self.ptr = val
@@ -147,3 +157,44 @@ class Reader:
 
 class ExpressionOfSymbols:
     pass
+
+class MalException(Exception):
+    def __init__(self, ex_str, ex_obj):
+        super().__init__(ex_str)
+        self.mal_obj = ex_obj
+        
+
+def compare_eq(a, b):
+    # allow vectors and lists to compare equal?
+    aIsList = (isinstance(a, LispList) or
+               isinstance(a, LispVector))
+    bIsList = (isinstance(b, LispList) or
+               isinstance(b, LispVector))
+    if (aIsList and bIsList):
+        if len(a.values) != len(b.values):
+            return False
+        for i in range(len(a.values)):
+            aval = a.values[i]
+            bval = b.values[i]
+            if not func_eq(aval, bval):
+                return False
+        return TrueSymbol()
+    if (type(a) != type(b)):
+        return FalseSymbol()
+    if isinstance(a, LispString):
+        if ((len(a.str) != len(b.str)) or
+            (a.str != b.str)):
+            return False
+        else:
+            return TrueSymbol()
+    if (isinstance(a, IntSymbol) or
+        isinstance(a, StrSymbol) or
+        isinstance(a, LispKeyword)):
+        if a.val == b.val:
+            return True
+        else:
+            return False
+
+    # other (singleton?) types
+    return True
+    
