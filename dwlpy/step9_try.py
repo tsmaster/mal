@@ -103,6 +103,11 @@ def EVAL(ast, env):
             if isinstance(catchop, parser.StrSymbol) and catchop.val == 'catch*':
                 try:
                     return EVAL(ast.values[1], env)
+                except parser.MalException as me:
+                    ex_label = ast.values[2].values[1].val
+                    newenv = environment.Environment(env, [ex_label], [me.mal_obj])
+                    return EVAL(ast.values[2].values[2], newenv)
+                    
                 except Exception as e:
                     ex_label = ast.values[2].values[1].val
                     ex_str = parser.LispString(str(e))
@@ -187,6 +192,14 @@ def eval_ast(ast, env):
         
     elif isinstance(ast, parser.LispList):
         return parser.LispList([EVAL(x, env) for x in ast.values])
+    elif isinstance(ast, parser.LispVector):
+        return parser.LispVector([EVAL(x, env) for x in ast.values])
+    elif isinstance(ast, parser.LispHashMap):
+        keyvals = []
+        for k in ast.keys():
+            keyvals.append(EVAL(k, env))
+            keyvals.append(EVAL(ast.lookup(k), env))
+        return parser.LispHashMap(keyvals)
     else:
         return ast
 
@@ -209,7 +222,7 @@ def mainloop():
             print(e)
         except parser.MalException as me:
             print(me)
-            print(printer.pr_str(me.mal_obj, False))
+            print(printer.pr_str(me.mal_obj, True))
         
 if __name__ == "__main__":
     if len(sys.argv) == 1:

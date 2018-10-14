@@ -82,11 +82,11 @@ def read_list(readerInst, termVal):
 
     while True:
         if not readerInst.has_token():
-            raise SyntaxError('missing )')
+            raise SyntaxError('missing ' + termVal)
         
         malItem = read_form(readerInst)
 
-        if isinstance(malItem, parser.StrSymbol) and malItem.val is termVal:
+        if isinstance(malItem, parser.StrSymbol) and malItem.val == termVal:
             return outList
         outList.append(malItem)
 

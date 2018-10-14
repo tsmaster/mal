@@ -24,7 +24,6 @@ class Namespace:
         self.set('>=', func_ge)
         self.set('pr-str', func_pr_str)
         self.set('str', func_str)
-        self.set('prn', func_prn)
         self.set('println', func_println)
         self.set('read-string', func_read_string)
         self.set('slurp', func_slurp)
@@ -291,7 +290,7 @@ def func_symbol_p(arg):
         return parser.FalseSymbol()
     
 def func_throw(arg):
-    raise parser.MalException(printer.pr_str(arg, False), arg)
+    raise parser.MalException("foo", arg)
 
 def func_keyword(arg):
     if isinstance(arg, parser.LispKeyword):
@@ -339,7 +338,16 @@ def func_assoc(*args):
     return newHM
 
 def func_dissoc(hm, *keys):
-    pass
+    newDict = {}
+    newDict.update(hm.data)
+    newHM = parser.LispHashMap([])
+    newHM.data = newDict
+
+    for k in keys:
+        newHM.unassign(k)
+    
+    return newHM
+
 
 def func_get(hm, key):
     if not isinstance(hm, parser.LispHashMap):

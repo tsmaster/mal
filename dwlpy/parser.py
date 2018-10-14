@@ -84,6 +84,13 @@ class LispList:
     def prepend(self, new_head):
         return LispList([new_head] + list(self.values))
 
+    def __str__(self):
+        s = '('+" ".join([str(x) for x in self.values])+')'
+        return s
+
+    def __repr__(self):
+        return str(self)
+
 class LispString:
     def __init__(self, s):
         self.str = s
@@ -105,6 +112,8 @@ class LispKeyword:
 
 class LispHashMap:
     def __init__(self, vals):
+        #print ("making hash map", vals)
+
         self.data = {}
         for i in range(0, len(vals), 2):
             key = vals[i]
@@ -128,6 +137,29 @@ class LispHashMap:
                 self.data[k] = value
                 return
         self.data[key] = value
+
+    def unassign(self, key):
+        for k in self.data.keys():
+            if compare_eq(k,key):
+                del(self.data[k])
+                return
+
+    def test_eq(self, other):
+        for k in self.keys():
+            if other.lookup(k) is None:
+                return False
+            if not compare_eq(self.lookup(k), other.lookup(k)):
+                return False
+        for k in other.keys():
+            if self.lookup(k) is None:
+                return False
+            if not compare_eq(self.lookup(k), other.lookup(k)):
+                return False
+        if len(self.keys()) != len(other.keys()):
+            return False
+        return True
+        
+        
     
 class LispAtom:
     def __init__(self, val):
@@ -162,7 +194,6 @@ class MalException(Exception):
     def __init__(self, ex_str, ex_obj):
         super().__init__(ex_str)
         self.mal_obj = ex_obj
-        
 
 def compare_eq(a, b):
     # allow vectors and lists to compare equal?
@@ -170,17 +201,22 @@ def compare_eq(a, b):
                isinstance(a, LispVector))
     bIsList = (isinstance(b, LispList) or
                isinstance(b, LispVector))
+    #print("alist:", aIsList)
+    #print("blist:", bIsList)
+    
     if (aIsList and bIsList):
         if len(a.values) != len(b.values):
             return False
-        for i in range(len(a.values)):
-            aval = a.values[i]
-            bval = b.values[i]
-            if not func_eq(aval, bval):
+        for i,v in enumerate(a.values):
+            if not compare_eq(v, b.values[i]):
                 return False
-        return TrueSymbol()
+        return True
+    #print("ta",type(a))
+    #print("tb",type(b))
     if (type(a) != type(b)):
-        return FalseSymbol()
+        #print("types not equal")
+        return False
+    #print ("types equal")
     if isinstance(a, LispString):
         if ((len(a.str) != len(b.str)) or
             (a.str != b.str)):
@@ -194,6 +230,15 @@ def compare_eq(a, b):
             return True
         else:
             return False
+
+    if isinstance(a, LispHashMap):
+        if not isinstance(b, LispHashMap):
+            return False
+    if isinstance(b, LispHashMap):
+        if not isinstance(a, LispHashMap):
+            return False
+    if isinstance(a, LispHashMap):
+        return a.test_eq(b)
 
     # other (singleton?) types
     return True
