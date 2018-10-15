@@ -1,10 +1,13 @@
 import sys
+import traceback
 
 import reader
 import printer
 import parser
 import environment
 import core
+import mal_readline
+
 
 repl_env = environment.Environment(None, [], [])
 repl_ns = core.Namespace()
@@ -42,6 +45,7 @@ def EVAL(ast, env):
             list element) as the symbol key and the evaluated second
             parameter as the value."""
             val = EVAL(ast.values[2], env)
+            #print ("defining", ast.values[1].val)
             env.set(ast.values[1].val, val)
             return val
         if isinstance(op, parser.StrSymbol) and op.val == 'defmacro!':
@@ -110,7 +114,9 @@ def EVAL(ast, env):
                     
                 except Exception as e:
                     ex_label = ast.values[2].values[1].val
-                    ex_str = parser.LispString(str(e))
+                    ex_type, ex_val, ex_tb = sys.exc_info()
+                    traceback.print_exc()
+                    ex_str = parser.LispString(str(e) + str(ex_tb))
                     newenv = environment.Environment(env, [ex_label], [ex_str])
                     return EVAL(ast.values[2].values[2], newenv)
             else:
@@ -208,7 +214,10 @@ rep("(def! not (fn* (a) (if a false true)))")
 rep('(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) ")")))))')
 rep('(def! *ARGV* (list))')
 rep("(defmacro! cond (fn* (& xs) (if (> (count xs) 0) (list 'if (first xs) (if (> (count xs) 1) (nth xs 1) (throw \"odd number of forms to cond\")) (cons 'cond (rest (rest xs)))))))")
-rep('(def! *host-language* "python3")')
+if sys.version_info[0] == 3:
+    rep('(def! *host-language* "python3")')
+else:
+    rep('(def! *host-language* "python2.7")')
 rep('(def! *gensym-counter* (atom 0))')
 rep('(def! gensym (fn* [] (symbol (str \"G__\" (swap! *gensym-counter* (fn* [x] (+ 1 x)))))))')
 rep('(defmacro! or (fn* (& xs) (if (empty? xs) nil (if (= 1 (count xs)) (first xs) (let* (condvar (gensym)) `(let* (~condvar ~(first xs)) (if ~condvar ~condvar (or ~@(rest xs)))))))))')
@@ -217,7 +226,7 @@ def mainloop():
     rep('(println (str "Mal [" *host-language* "]"))')
     while True:
         try:
-            s = input("user> ")
+            s = mal_readline.readline("user> ")
             print (rep(s))
         except ValueError as e:
             print(e)

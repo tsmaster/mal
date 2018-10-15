@@ -1,3 +1,3 @@
 #! /bin/bash
 
-python3 stepA_mal.py
+python2.7 stepA_mal.py

@@ -1,4 +1,7 @@
 import time
+import sys
+import copy
+import types as pytypes
 
 import parser
 import printer
@@ -396,11 +399,14 @@ def func_sequential_p(arg):
         return parser.FalseSymbol()
 
 def func_readline(arg):
-    prompt = printer.pr_str(arg, True)
+    prompt = printer.pr_str(arg, False)
     
     try:
-        print(prompt, end='', flush=True)
-        in_str = input()
+        if sys.version_info[0] >= 3:
+            #print(prompt, end='', flush=True)
+            in_str = input(prompt)
+        else:
+            in_str = raw_input(prompt)
         return parser.LispString(in_str)
     except EOFError:
         return parser.NilSymbol()
@@ -419,8 +425,17 @@ def func_meta(arg):
 def func_with_meta(a, b):
     if hasattr(a, "metadata"):
         return a.copyWithNewMetadata(b)
+    if type(a) == pytypes.FunctionType:
+        if a.__code__:
+            c = pytypes.FunctionType(a.__code__, a.__globals__, name = a.__name__,
+                                     argdefs = a.__defaults__, closure = a.__closure__)
+        else:
+            c = pytypes.FunctionType(a.func_code, a.func_globals, name = a.func_name,
+                                     argdefs = a.func_defaults, closure = a.func_closure)
     else:
-        return a
+        c = copy.copy(a)
+    c.metadata = b
+    return c
 
     
 def func_string_p(arg):
@@ -451,15 +466,16 @@ def func_time_ms():
 
 def func_conj(*args):
     first = args[0]
+    first_values = list(first.values)
     #print(type(first))
     #print(type(first.values))
     rest = list(args[1:])
     #print(type(rest))
     if isinstance(first, parser.LispList):
         rest.reverse()
-        return parser.LispList(rest + first.values)
+        return parser.LispList(rest + first_values)
     if isinstance(first, parser.LispVector):
-        return parser.LispVector(first.values + rest)
+        return parser.LispVector(first_values + rest)
     return parser.NilSymbol()
 
 def func_macro_p(arg):

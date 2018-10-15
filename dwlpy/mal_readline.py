@@ -11,9 +11,9 @@ else:
 
 def readline(promptStr):
     try:
-        print(promptStr)
-        line = rl()
-        #line = rl(promptStr)
+        #print(promptStr)
+        #line = rl()
+        line = rl(promptStr)
     except IOError:
         pass
     except EOFError:

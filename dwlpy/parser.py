@@ -218,7 +218,7 @@ class ExpressionOfSymbols:
 
 class MalException(Exception):
     def __init__(self, ex_str, ex_obj):
-        super().__init__(ex_str)
+        super(MalException, self).__init__(ex_str)
         self.mal_obj = ex_obj
 
 def compare_eq(a, b):
@@ -243,15 +243,15 @@ def compare_eq(a, b):
         #print("types not equal")
         return False
     #print ("types equal")
-    if isinstance(a, LispString):
+    if (isinstance(a, LispString) and (isinstance(b, LispString))):
         if ((len(a.str) != len(b.str)) or
             (a.str != b.str)):
             return False
         else:
-            return TrueSymbol()
-    if (isinstance(a, IntSymbol) or
-        isinstance(a, StrSymbol) or
-        isinstance(a, LispKeyword)):
+            return True
+    if ((isinstance(a, IntSymbol) and isinstance(b, IntSymbol)) or
+        (isinstance(a, StrSymbol) and isinstance(b, StrSymbol)) or
+        (isinstance(a, LispKeyword) and isinstance(b, LispKeyword))):
         if a.val == b.val:
             return True
         else:
@@ -266,6 +266,15 @@ def compare_eq(a, b):
     if isinstance(a, LispHashMap):
         return a.test_eq(b)
 
+    if isinstance(a, TrueSymbol):
+        return isinstance(b, TrueSymbol)
+
+    if isinstance(a, FalseSymbol):
+        return isinstance(b, FalseSymbol)
+
+    if isinstance(a, NilSymbol):
+        return isinstance(b, NilSymbol)
+
     # other (singleton?) types
-    return True
+    return str(a) == str(b)
     
