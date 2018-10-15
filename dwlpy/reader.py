@@ -63,6 +63,11 @@ def read_form(readerInst):
         readerInst.next()
         nextForm = read_form(readerInst)
         return parser.LispList([parser.StrSymbol('splice-unquote'), nextForm])
+    elif tok == "^":
+        readerInst.next()
+        nf = read_form(readerInst)
+        nnf = read_form(readerInst)
+        return parser.LispList([parser.StrSymbol('with-meta'), nnf, nf])
     else:
         return read_atom(readerInst)
     

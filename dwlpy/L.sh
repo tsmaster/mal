@@ -1,3 +1,3 @@
 #! /bin/bash
 
-python3 step9_try.py
+python3 stepA_mal.py

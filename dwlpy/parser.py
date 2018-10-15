@@ -51,6 +51,7 @@ class FuncClosure:
         self.body = body
         self.evalFunc = evalFunc
         self.isMacro = False
+        self.metadata = NilSymbol()
 
     def setMacro(self, isMacro):
         self.isMacro = isMacro
@@ -77,9 +78,16 @@ class FuncClosure:
     def call(self, argList):
         return self.evalFunc(self.body, self.prepareEnv(argList))
 
+    def copyWithNewMetadata(self, new_metadata):
+        newFc = FuncClosure(self.env, self.params, self.body, self.evalFunc)
+        newFc.isMacro = self.isMacro
+        newFc.metadata = new_metadata
+        return newFc
+
 class LispList:
     def __init__(self, values):
-        self.values = values
+        self.values = list(values)
+        self.metadata = NilSymbol()
 
     def prepend(self, new_head):
         return LispList([new_head] + list(self.values))
@@ -91,6 +99,11 @@ class LispList:
     def __repr__(self):
         return str(self)
 
+    def copyWithNewMetadata(self, new_metadata):
+        newList = LispList(self.values)
+        newList.metadata = new_metadata
+        return newList
+
 class LispString:
     def __init__(self, s):
         self.str = s
@@ -98,9 +111,15 @@ class LispString:
 class LispVector:
     def __init__(self, values):
         self.values = values
+        self.metadata = NilSymbol()
         
     def prepend(self, new_head):
         return LispList([new_head] + list(self.values))
+
+    def copyWithNewMetadata(self, new_metadata):
+        newVector = LispVector(self.values)
+        newVector.metadata = new_metadata
+        return newVector
 
 class LispKeyword:
     def __init__(self, val):
@@ -119,6 +138,7 @@ class LispHashMap:
             key = vals[i]
             val = vals[i+1]
             self.data[key] = val
+        self.metadata = NilSymbol()
             
     def keys(self):
         keyList = list(self.data.keys())
@@ -159,6 +179,12 @@ class LispHashMap:
             return False
         return True
         
+    def copyWithNewMetadata(self, new_metadata):
+        newHash = LispHashMap([])
+        newHash.data.update(self.data)
+        newHash.metadata = new_metadata
+        return newHash
+
         
     
 class LispAtom:

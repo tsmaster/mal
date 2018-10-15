@@ -1,7 +1,9 @@
+import time
+
 import parser
 import printer
 import reader
-
+import mal_readline
 
 class Namespace:
     """ Namespace maps symbols to functions"""
@@ -58,7 +60,17 @@ class Namespace:
         self.set('keys', func_keys)
         self.set('vals', func_vals)
         self.set('sequential?', func_sequential_p)
-
+        self.set('readline', func_readline)
+        self.set('meta', func_meta)
+        self.set('with-meta', func_with_meta)
+        self.set('string?', func_string_p)
+        self.set('number?', func_number_p)
+        self.set('fn?', func_fn_p)
+        self.set('time-ms', func_time_ms)
+        self.set('conj', func_conj)
+        self.set('macro?', func_macro_p)
+        self.set('seq', func_seq)
+        self.set('python-eval', func_python_eval)
 
     def set(self, key, func):
         self.funcs[key] = func
@@ -383,5 +395,97 @@ def func_sequential_p(arg):
     else:
         return parser.FalseSymbol()
 
+def func_readline(arg):
+    prompt = printer.pr_str(arg, True)
+    
+    try:
+        print(prompt, end='', flush=True)
+        in_str = input()
+        return parser.LispString(in_str)
+    except EOFError:
+        return parser.NilSymbol()
+    #try:
+    #    in_str = mal_readline.readline(prompt)
+    #return parser.LispString(in_str)
+    #except EOFError:
+    #    return parser.NilSymbol()
+
+def func_meta(arg):
+    if hasattr(arg, "metadata"):
+        return arg.metadata
+    else:
+        return parser.NilSymbol()
+
+def func_with_meta(a, b):
+    if hasattr(a, "metadata"):
+        return a.copyWithNewMetadata(b)
+    else:
+        return a
+
+    
+def func_string_p(arg):
+    if (isinstance(arg, parser.LispString)):
+        return parser.TrueSymbol()
+    else:
+        return parser.FalseSymbol()
+
+def func_number_p(arg):
+    if (isinstance(arg, parser.IntSymbol)):
+        return parser.TrueSymbol()
+    else:
+        return parser.FalseSymbol()
+
+def func_fn_p(arg):
+    dummy_func = lambda x : (x + 1)
+    
+    if ((isinstance(arg, parser.FuncClosure) and (not arg.isMacro)) or
+        (type(arg) == type(dummy_func))):
+        return parser.TrueSymbol()
+    else:
+        return parser.FalseSymbol()
+
+def func_time_ms():
+    t = time.time()
+    ms = int(t * 1000)
+    return parser.IntSymbol(str(ms))
+
+def func_conj(*args):
+    first = args[0]
+    #print(type(first))
+    #print(type(first.values))
+    rest = list(args[1:])
+    #print(type(rest))
+    if isinstance(first, parser.LispList):
+        rest.reverse()
+        return parser.LispList(rest + first.values)
+    if isinstance(first, parser.LispVector):
+        return parser.LispVector(first.values + rest)
+    return parser.NilSymbol()
+
+def func_macro_p(arg):
+    if (isinstance(arg, parser.FuncClosure) and
+        arg.isMacro):
+        return parser.TrueSymbol()
+    else:
+        return parser.FalseSymbol()
 
 
+def func_seq(arg):
+    if (isinstance(arg, parser.NilSymbol)):
+        return parser.NilSymbol()
+    if (isinstance(arg, parser.LispList) or
+        isinstance(arg, parser.LispVector)):
+        if len(arg.values) == 0:
+            return parser.NilSymbol()
+        return parser.LispList(arg.values)
+    if isinstance(arg, parser.LispString):
+        if len(arg.str) == 0:
+            return parser.NilSymbol()
+        return parser.LispList([parser.LispString(x) for x in list(arg.str)])
+
+def func_python_eval(arg):
+    s = printer.pr_str(arg, False)
+    val = str(eval(s))
+    return parser.LispString(val)
+
+    
